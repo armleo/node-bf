@@ -1,44 +1,62 @@
 var fs = require("fs"), //requiers
-	fork = require("child_process").fork
+	fork = require("child_process").fork;
+	
+	
 //reading code from file
-var p = fs.readFileSync(process.argv[2]).toString();
-p=p.replace(/\+\+\+\+\+\+/g,"z").replace(/\-\-\-\-\-\-/g,"Z").replace(/\>\>\>\>\>\>/g,"k").replace(/\+\+\+\+/g,"E").replace(/\-\-\-\-/g,"F").replace(/\<\<\<\</g,"G").replace(/\>\>\>\>/g,"H").replace(/\+\+\+/g,"e").replace(/\-\-\-/g,"f").replace(/\<\<\</g,"g").replace(/\>\>\>/g,"h").replace(/\+\+/g,"a").replace(/\-\-/g,"b").replace(/\<\</g,"c").replace(/\>\>/g,"d");
+var p = fs.readFileSync(process.argv[2]).toString().split("");
 
-var pc=0,tomove=["function putchar(v){process.stdout.write(String.fromCharCode(v))};var x=[],xc=0;for(i = 0; i<32767; i++) x[i]=0;"];
 
-switcher={
-	">"	:	'++xc',
-	"+" :	'++x[xc]',
-	"-"	: 	'--x[xc]',
-	"<"	:	'--xc',
-	"."	:	'putchar(x[xc])',
-	"[" :	'while(x[xc]!=0){',
-	"]" : 	'}',
-	";"	:	'break',
-	"@"	:	'x[xc]=0',
-	":"	:	'xc=0',
-	"a"	:	'x[xc]+=2',
-	"b"	:	'x[xc]-=2',
-	"c"	:	'xc-=2',
-	"d"	:	'xc+=2',
-	"e"	:	'x[xc]+=3',
-	"f"	:	'x[xc]-=3',
-	"g"	:	'xc-=3',
-	"h"	:	'xc+=3',
-	"E"	:	'x[xc]+=4',
-	"F"	:	'x[xc]-=4',
-	"G"	:	'xc-=4',
-	"H"	:	'xc+=4',
-	"K"	:	'xc-=6',
-	"k"	:	'xc+=6',
-	"Z"	:	'x[xc]-=6',
-	"z"	:	'x[xc]+=6',
-	","	:	'x[xc]=getchar()'
+
+var pc=0,x=[],xc=0,result=["function putchar(v){process.stdout.write(String.fromCharCode(v))};\nfunction getchar(){while(!input){} return input.charCodeAt(0);};var x=Uint8Array(32768),xc=0,input;for(i = 0; i<32767; i++) x[i]=0;"];
+for(var i = 0; i<32767; i++) x[i]=0;
+
+function count(v)
+{
+	var a=0;
+	while(p[pc]==v)
+	{
+		++a;
+		++pc;
+	}
+	--pc;
+	return a;
 }
-for(pc = 0; pc < p.length; pc++) {
-	tomove.push(switcher[p[pc]])
-}
-delete p,pc;
-fs.writeFileSync("tmp/compiled.js",(tomove).join(";").replace(/\;\;\;/g,";").replace(/\;\;/g,";"))
-fork(__dirname + "/tmp/compiled.js");
 
+for(pc = 0; pc < p.length;++pc) {
+	switch(p[pc])
+	{
+	case "[":
+		if(p[pc+1]=="-"&&p[pc+2]=="]")
+		{
+			result.push("x[xc]=0;");
+			pc+=2;
+		}
+		else
+			result.push("while(x[xc]!=0){");
+		break;
+	case "]":
+		result.push("}");
+		break;
+	case ">":
+		result.push("xc+="+count(">")+";");
+		break;
+	case "<":
+		result.push("xc-="+count("<")+";");
+		break;
+	case "+":
+		result.push("x[xc]+="+count("+")+";");
+		break;
+	case "-":
+		result.push("x[xc]-="+count("-")+";");
+		break;
+	case ".":
+		result.push("putchar(x[xc]);");
+		break;
+	case ",":
+		result.push("x[xc]=getchar();");
+		break;
+	}
+}
+
+fs.writeFileSync("../tmp/compiled.js",result.join("\n"))
+fork(__dirname + "/../tmp/compiled.js");
